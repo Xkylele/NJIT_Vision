@@ -1,0 +1,18 @@
+pattern_cols: 9
+pattern_rows: 6
+center_distance_mm: 25
+
+R_gimbal2imubody: [1, 0, 0, 0, 1, 0,  0, 0, 1]
+
+camera_name: "hikrobot"
+exposure_ms: 15
+gain: 10.0
+vid_pid: "2bdf:0001"
+
+#####-----cboard参数-----#####
+quaternion_canid: 0x100
+bullet_speed_canid: 0x110
+send_canid: 0xff
+can_interface: "can0"
+
+# 每次先capture 然后 calibrate_camera 将相机内参复制到此处 然后手眼标定 calibrate_handeye
