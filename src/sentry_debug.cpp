@@ -43,18 +43,19 @@ int main(int argc, char * argv[])
   auto config_path = cli.get<std::string>(0);
 
   // io::ROS2 ros2;
-  // io::CBoard cboard(config_path);
+  io::CBoard cboard(config_path);
   io::Camera camera(config_path);
-  io::Camera back_camera("configs/camera.yaml");
+  // io::Camera back_camera("configs/camera.yaml");
   io::USBCamera usbcam1("video0", config_path);//left
   io::USBCamera usbcam2("video2", config_path);//right
+  io::USBCamera back_camera("video4", config_path);//back
 
   auto_aim::YOLO yolo(config_path, false);
   auto_aim::Solver solver(config_path);
   auto_aim::Tracker tracker(config_path, solver);
   auto_aim::Aimer aimer(config_path);
   auto_aim::Shooter shooter(config_path);
-
+  io::Command command;
   omniperception::Decider decider(config_path);
 
   cv::Mat img;
@@ -64,53 +65,52 @@ int main(int argc, char * argv[])
 
   while (!exiter.exit()) {
     camera.read(img, timestamp);
-    // Eigen::Quaterniond q = cboard.imu_at(timestamp - 1ms); 111
-    
-    // recorder.record(img, q, timestamp);
-
+    auto last = std::chrono::steady_clock::now();
+    Eigen::Quaterniond q = cboard.imu_at(timestamp - 1ms);
     /// 自瞄核心逻辑
-    // solver.set_R_gimbal2world(q); 111
-    //for debug
-    solver.set_R_gimbal2world({0.0, 0.0, 0.0, 0.0});
+    solver.set_R_gimbal2world(q);
 
     Eigen::Vector3d gimbal_pos = tools::eulers(solver.R_gimbal2world(), 2, 1, 0);
 
     auto armors = yolo.detect(img);
-
-    // decider.get_invincible_armor(ros2.subscribe_enemy_status());
-
     decider.armor_filter(armors);
-
-    // decider.get_auto_aim_target(armors, ros2.subscribe_autoaim_target());
-
     decider.set_priority(armors);
 
     auto targets = tracker.track(armors, timestamp);
-
-    io::Command command{false, false, 0, 0};
 
     // 前面都与普通自瞄一样 
     /// 全向感知逻辑
     if (tracker.state() == "lost")
       command = decider.decide(yolo, gimbal_pos, usbcam1, usbcam2, back_camera);
-      // command = decider.decide(yolo, gimbal_pos, back_camera);
     else
-      // command = aimer.aim(targets, timestamp, cboard.bullet_speed, cboard.shoot_mode);111 这个地方后面要该 哨兵的标准逻辑
-      command = aimer.aim(targets, timestamp, 23);
-
+      command = aimer.aim(targets, timestamp, 22);
     /// 发射逻辑
-    command.shoot = shooter.shoot(command, aimer, targets, gimbal_pos);
+    // 火控
+    // command.shoot = shooter.shoot(command, aimer, targets, gimbal_pos);
 
-    // cboard.send(command); 111
+    cboard.send(command);
 
-    // /// ROS2通信
-    // Eigen::Vector4d target_info = decider.get_target_info(armors, targets);
+    // auto now = std::chrono::steady_clock::now();
+    // auto dt = tools::delta_time(now, last);
+    // tools::logger()->info("{:.2f} fps", 1 / dt);
 
-    // ros2.publish(target_info);
+
 
     /// debug
     tools::draw_text(img, fmt::format("[{}]", tracker.state()), {10, 30}, {255, 255, 255});
+    tools::draw_text(
+    img,
+    fmt::format(
+    "command is {},{:.2f},{:.2f},shoot:{}", command.control, command.yaw * 57.3,
+    command.pitch * 57.3, command.shoot),
+    {10, 60}, {154, 50, 205});
 
+    tools::draw_text(
+        img,
+        fmt::format(
+        "gimbal yaw{:.2f} pitch{:.2f}", (tools::eulers(q.toRotationMatrix(), 2, 1, 0) * 57.3)[0], (tools::eulers(q.toRotationMatrix(), 2, 1, 0) * 57.3)[1]),
+        {10, 90}, {255, 255, 255});
+    
     nlohmann::json data;
 
     // 装甲板原始观测数据

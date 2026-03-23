@@ -5,4 +5,4 @@ screen \
     -Logfile logs/$(date "+%Y-%m-%d_%H-%M-%S").screenlog \
     -d \
     -m \
-    bash -c "./infantry.sh"
+    bash -c "./sentry.sh; ./camera_setting.sh"

@@ -382,10 +382,48 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 
 # 哨兵左右相机区分
+不再通过video号区分
+使用锐度 查看/etc/udev规则
+if (sharpness_ == 2) {
+device_name = "left";
+cap_.set(cv::CAP_PROP_FRAME_WIDTH, image_width_);
+cap_.set(cv::CAP_PROP_FRAME_HEIGHT, image_height_);
+cap_.set(cv::CAP_PROP_EXPOSURE, usb_exposure_);
+} else if (sharpness_ == 3) {
+device_name = "right";
+cap_.set(cv::CAP_PROP_FRAME_WIDTH, image_width_);
+cap_.set(cv::CAP_PROP_FRAME_HEIGHT, image_height_);
+cap_.set(cv::CAP_PROP_EXPOSURE, usb_exposure_);
+}
+
 通过设置相机的锐度
-锐度2 为left 锐度3 为right
+<!-- 锐度2 为left 锐度3 为right
 v4l2-ctl -d /dev/video0 --set-ctrl=sharpness=2
-v4l2-ctl -d /dev/video2 --set-ctrl=sharpness=3
+v4l2-ctl -d /dev/video2 --set-ctrl=sharpness=3 -->
+
+
+
+lele@shaobing:~$ # 查看物理端口
+udevadm info -a -n /dev/video0 | grep KERNELS | head -3
+    KERNELS=="1-1:1.0"
+    KERNELS=="1-1"
+    KERNELS=="usb1"
+
+lele@shaobing:~$ udevadm info -a -n /dev/video2 | grep KERNELS | head -3
+    KERNELS=="1-3:1.0"
+    KERNELS=="1-3"
+    KERNELS=="usb1"
+
+lele@shaobing:~$ udevadm info -a -n /dev/video4 | grep KERNELS | head -3
+    KERNELS=="1-10.1:1.0"
+    KERNELS=="1-10.1"
+    KERNELS=="1-10"
+
+SUBSYSTEM=="video4linux", KERNELS=="1-1",    ATTR{name}=="USB 2.0 Camera", RUN+="/usr/bin/v4l2-ctl -d /dev/%k --set-ctrl=sharpness=2"
+SUBSYSTEM=="video4linux", KERNELS=="1-3",    ATTR{name}=="USB 2.0 Camera", RUN+="/usr/bin/v4l2-ctl -d /dev/%k --set-ctrl=sharpness=4"
+SUBSYSTEM=="video4linux", KERNELS=="1-10.1", ATTR{name}=="USB 2.0 Camera", RUN+="/usr/bin/v4l2-ctl -d /dev/%k --set-ctrl=sharpness=3"
+
+
 
 # 自启动切记加权限
 chmod +x autostart.sh

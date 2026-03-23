@@ -33,7 +33,7 @@ private:
   int usb_exposure_, usb_frame_rate_, sharpness_;
   int open_count_;
   double image_width_, image_height_;
-  int usb_gamma_, usb_gain_;
+  int usb_gamma_, usb_gain_, usb_brightness_, usb_contrast_, usb_saturation_;
   bool quit_, ok_;
   std::thread capture_thread_;
   std::thread daemon_thread_;

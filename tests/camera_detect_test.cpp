@@ -12,7 +12,7 @@
 
 const std::string keys =
   "{help h usage ? |                        | 输出命令行参数说明 }"
-  "{@config-path   | configs/sentry.yaml    | yaml配置文件的路径}"
+  "{@config-path   | configs/test.yaml    | yaml配置文件的路径}"
   "{tradition t    |  false                 | 是否使用传统方法识别}";
 
 int main(int argc, char * argv[])
@@ -39,22 +39,30 @@ int main(int argc, char * argv[])
     std::list<auto_aim::Armor> armors;
 
     camera.read(img, timestamp);
+    // 在 camera.read 前后计时
+    auto last = std::chrono::steady_clock::now();
+    camera.read(img, timestamp);
+    auto now = std::chrono::steady_clock::now();
+    auto dt = tools::delta_time(now, last);
+    tools::logger()->info("camera {:.2f} fps", 1 / dt);
 
     if (img.empty()) break;
 
-    auto last = std::chrono::steady_clock::now();
+    // auto last = std::chrono::steady_clock::now();
 
     if (use_tradition)
       armors = detector.detect(img);
     else
       armors = yolo.detect(img);
 
-    auto now = std::chrono::steady_clock::now();
-    auto dt = tools::delta_time(now, last);
-    tools::logger()->info("{:.2f} fps", 1 / dt);
-
-    auto key = cv::waitKey(33);
-    if (key == 'q') break;
+    // auto now = std::chrono::steady_clock::now();
+    // auto dt = tools::delta_time(now, last);
+    // tools::logger()->info("{:.2f} fps", 1 / dt);
+    // if (!display) continue;
+    
+    cv::resize(img, img, {}, 0.5, 0.5);  // 显示时缩小图片尺寸    
+    cv::imshow("img", img);
+    if (cv::waitKey(1) == 'q') break;
   }
 
   return 0;

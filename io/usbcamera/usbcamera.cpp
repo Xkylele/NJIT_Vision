@@ -19,6 +19,9 @@ USBCamera::USBCamera(const std::string & open_name, const std::string & config_p
   usb_frame_rate_ = tools::read<double>(yaml, "usb_frame_rate");
   usb_gamma_ = tools::read<double>(yaml, "usb_gamma");
   usb_gain_ = tools::read<double>(yaml, "usb_gain");
+  usb_brightness_ =  tools::read<double>(yaml, "usb_brightness");
+  usb_contrast_ = tools::read<double>(yaml, "usb_contrast");
+  usb_saturation_ = tools::read<double>(yaml, "usb_saturation");
   try_open();
 
   // 守护线程
@@ -112,11 +115,25 @@ void USBCamera::open()
     cap_.set(cv::CAP_PROP_FRAME_WIDTH, image_width_);
     cap_.set(cv::CAP_PROP_FRAME_HEIGHT, image_height_);
     cap_.set(cv::CAP_PROP_EXPOSURE, usb_exposure_);
+    cap_.set(cv::CAP_PROP_CONTRAST, usb_contrast_);    // 对比度
+    cap_.set(cv::CAP_PROP_BRIGHTNESS, usb_brightness_);  // 亮度
+    cap_.set(cv::CAP_PROP_SATURATION, usb_saturation_);  // 饱和度
   } else if (sharpness_ == 3) {
     device_name = "right";
     cap_.set(cv::CAP_PROP_FRAME_WIDTH, image_width_);
     cap_.set(cv::CAP_PROP_FRAME_HEIGHT, image_height_);
     cap_.set(cv::CAP_PROP_EXPOSURE, usb_exposure_);
+    cap_.set(cv::CAP_PROP_CONTRAST, usb_contrast_);    // 对比度
+    cap_.set(cv::CAP_PROP_BRIGHTNESS, usb_brightness_);  // 亮度
+    cap_.set(cv::CAP_PROP_SATURATION, usb_saturation_);  // 饱和度
+  }else if (sharpness_ == 4){
+    device_name = "back";
+    cap_.set(cv::CAP_PROP_FRAME_WIDTH, image_width_);
+    cap_.set(cv::CAP_PROP_FRAME_HEIGHT, image_height_);
+    cap_.set(cv::CAP_PROP_EXPOSURE, usb_exposure_);
+    cap_.set(cv::CAP_PROP_CONTRAST, usb_contrast_);    // 对比度
+    cap_.set(cv::CAP_PROP_BRIGHTNESS, usb_brightness_);  // 亮度
+    cap_.set(cv::CAP_PROP_SATURATION, usb_saturation_);  // 饱和度
   }
 
   tools::logger()->info("{} USBCamera opened", device_name);

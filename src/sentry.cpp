@@ -61,6 +61,7 @@ int main(int argc, char * argv[])
 
   std::chrono::steady_clock::time_point timestamp;
   io::Command last_command;
+  io::Command command;
 
   while (!exiter.exit()) {
     camera.read(img, timestamp);
@@ -84,7 +85,7 @@ int main(int argc, char * argv[])
 
     auto targets = tracker.track(armors, timestamp);
 
-    io::Command command{false, false, 0, 0};
+    // io::Command command{false, false, 0, 0};
 
     /// 全向感知逻辑
     if (tracker.state() == "lost")

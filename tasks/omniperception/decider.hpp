@@ -20,6 +20,10 @@ class Decider
 {
 public:
   Decider(const std::string & config_path);
+  ///////////重载//////////////////
+  io::Command decide(
+  auto_aim::YOLO & yolo, const Eigen::Vector3d & gimbal_pos, io::USBCamera & usbcam1,
+  io::USBCamera & usbcam2, io::USBCamera & back_camera);
 
   io::Command decide(
     auto_aim::YOLO & yolo, const Eigen::Vector3d & gimbal_pos, io::USBCamera & usbcam1,

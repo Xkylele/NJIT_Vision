@@ -79,38 +79,75 @@ void MindVision::open()
   CameraSetAeState(handle_, FALSE);                        // 关闭自动曝光
   CameraSetExposureTime(handle_, exposure_ms_ * 1e3);      // 设置曝光
   CameraSetGamma(handle_, gamma_ * 1e2);                   // 设置伽马
+  CameraSetFrameRate(handle_, 30);   // 设置为 30fps
   CameraSetIspOutFormat(handle_, CAMERA_MEDIA_TYPE_BGR8);  // 设置输出格式为BGR
   CameraSetTriggerMode(handle_, 0);                        // 设置为连续采集模式
-  CameraSetFrameSpeed(handle_, 1);                         // 设置为低帧率模式
+  CameraSetFrameSpeed(handle_, 0);                         // 设置为低帧率模式
+
 
   CameraPlay(handle_);
 
-  // 取图线程
+  // // 取图线程
+  // capture_thread_ = std::thread{[this] {
+  //   tSdkFrameHead head;
+  //   BYTE * raw;
+
+  //   ok_ = true;
+  //   while (!quit_) {
+  //     std::this_thread::sleep_for(1ms);
+
+  //     auto img = cv::Mat(height_, width_, CV_8UC3);
+
+  //     auto status = CameraGetImageBuffer(handle_, &head, &raw, 100);
+  //     auto timestamp = std::chrono::steady_clock::now();
+
+  //     if (status != CAMERA_STATUS_SUCCESS) {
+  //       tools::logger()->warn("Camera dropped!");
+  //       ok_ = false;
+  //       break;
+  //     }
+
+  //     CameraImageProcess(handle_, raw, img.data, &head);
+  //     CameraReleaseImageBuffer(handle_, raw);
+
+  //     queue_.push({img, timestamp});
+  //   }
+  // }};
+
   capture_thread_ = std::thread{[this] {
-    tSdkFrameHead head;
-    BYTE * raw;
+  tSdkFrameHead head;
+  BYTE * raw;
+  ok_ = true;
 
-    ok_ = true;
-    while (!quit_) {
-      std::this_thread::sleep_for(1ms);
+  const auto frame_interval = std::chrono::milliseconds(1000 / 30);  // 33ms = 30fps
+  auto last_time = std::chrono::steady_clock::now();
 
-      auto img = cv::Mat(height_, width_, CV_8UC3);
+  while (!quit_) {
+    // 限制帧率到 30fps
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_time < frame_interval) {
+        std::this_thread::sleep_for(frame_interval - (now - last_time));
+    }
+    last_time = std::chrono::steady_clock::now();
 
-      auto status = CameraGetImageBuffer(handle_, &head, &raw, 100);
-      auto timestamp = std::chrono::steady_clock::now();
+    // 先清空缓冲区，丢弃积压的旧帧
+    CameraClearBuffer(handle_);
 
-      if (status != CAMERA_STATUS_SUCCESS) {
+    auto img = cv::Mat(height_, width_, CV_8UC3);
+    auto status = CameraGetImageBuffer(handle_, &head, &raw, 100);
+    auto timestamp = std::chrono::steady_clock::now();
+
+    if (status != CAMERA_STATUS_SUCCESS) {
         tools::logger()->warn("Camera dropped!");
         ok_ = false;
         break;
-      }
-
-      CameraImageProcess(handle_, raw, img.data, &head);
-      CameraReleaseImageBuffer(handle_, raw);
-
-      queue_.push({img, timestamp});
     }
-  }};
+
+    CameraImageProcess(handle_, raw, img.data, &head);
+    CameraReleaseImageBuffer(handle_, raw);
+    queue_.push({img, timestamp});
+}
+}};
 
   tools::logger()->info("Mindvision opened.");
 }

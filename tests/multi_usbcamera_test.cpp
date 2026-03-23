@@ -27,16 +27,18 @@ int main(int argc, char * argv[])
   auto display = cli.has("display");
 
   io::USBCamera usbcam1("video0", config_path);
-  // io::USBCamera usbcam2("video2", config_path);
-  io::Camera camera("configs/camera.yaml");
+  io::USBCamera usbcam2("video2", config_path);
+  // io::Camera camera("configs/camera.yaml");
+  io::Camera camera2(config_path);
 
-  cv::Mat img1, img2, img3;
+  cv::Mat img1, img2, img3,img4;
   std::chrono::steady_clock::time_point timestamp;
   auto last_stamp = std::chrono::steady_clock::now();
   while (!exiter.exit()) {
     usbcam1.read(img1, timestamp);
-    // usbcam2.read(img2, timestamp);
-    camera.read(img3, timestamp);
+    usbcam2.read(img2, timestamp);
+    // camera.read(img3, timestamp);
+    camera2.read(img4, timestamp);
 
     auto dt = tools::delta_time(timestamp, last_stamp);
     last_stamp = timestamp;
@@ -45,8 +47,9 @@ int main(int argc, char * argv[])
 
     if (!display) continue;
     cv::imshow("img1", img1);
-    // cv::imshow("img2", img2);
-    cv::imshow("img3", img3);
+    cv::imshow("img2", img2);
+    // cv::imshow("img3", img3);
+    cv::imshow("img4", img4);
 
     if (cv::waitKey(1) == 'q') break;
   }
